@@ -1,35 +1,60 @@
-const bluetooth = require('node-bluetooth');
-const device = new bluetooth.DeviceINQ();
+var http = require('http'), fs = require('fs');
+let index = fs.readFileSync(__dirname + '/index.html');
 
-// Find devices
-device
-    .on('finished', console.log.bind(console, 'finished'))
-    .on('found', function found(address, name) {
-        console.log('Found: ' + address + ' with name ' + name);
+// Send index.html to all requests
+var app = http.createServer(function(req, res) {
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    res.end(index);
+});
 
-        // We know our Arduino bluetooth module is called 'HC-05', so we only want to connect to that.
-        if (name === 'SHAHBLE') {
+// Socket.io server listens to our app
+var io = require('socket.io').listen(app);
 
-            // find serial port channel
-            device.findSerialPortChannel(address, function (channel) {
-                console.log('Found channel for serial port on %s: ', name, channel);
+// Send current time to all connected clients
+function sendTime() {
+    io.emit('time', { time: new Date().toJSON() });
+}
 
-                // make bluetooth connect to remote device
-                bluetooth.connect(address, channel, function (err, connection) {
-                    if (err) return console.error(err);
+// Send current time every 10 secs
+setInterval(sendTime, 2000);
 
-                    // This is some example code from the library for writing, customize as you wish.
-                    connection.delimiter = Buffer.from('/n', 'utf-8');
-                    connection.on('data', (buffer) => {
-                        console.log('received message: ', buffer.toString());
-                    });
+// Emit welcome message on connection
+io.on('connection', function(socket) {
+    // Use socket to communicate with this particular client only, sending it it's own id
+    socket.emit('welcome', { message: 'Welcome!', id: socket.id });
 
-                    // This is some example code from the library for writing, customize as you wish.
-                    connection.write(new Buffer('hello', 'utf-8'), () => {
-                        console.log('wrote');
-                    });
-                });
-            });
-        }
-    });
-device.scan();
+    socket.on('i am client', console.log);
+});
+
+app.listen(3000);
+
+// var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort();
+// let DEVICE_NAME = "SHAHBLE"
+
+// btSerial.on('found', function(address, name) {
+//     if (name == DEVICE_NAME) {
+//         btSerial.findSerialPortChannel(address, function(channel) {
+//             btSerial.connect(address, channel, function() {
+//                 console.log('connected');
+
+//                 btSerial.write(Buffer.from('my data', 'utf-8'), function(err, bytesWritten) {
+//                     if (err) console.log(err);
+//                 });
+
+//                 btSerial.on('data', function(buffer) {
+//                     console.log(buffer.toString('utf-8'));
+//                 });
+
+//             }, function () {
+//                 console.log("Cannot connect to " + DEVICE_NAME);
+//             });
+
+//             // close the connection when you're ready
+//             btSerial.close();
+//         }, function() {
+//             console.log(DEVICE_NAME + " not found");
+//         });
+//     }
+// });
+
+// btSerial.inquire();

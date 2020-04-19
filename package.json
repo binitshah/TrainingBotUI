@@ -4,7 +4,8 @@
   "description": "UI to control the TrainingBot",
   "main": "main.js",
   "dependencies": {
-    "node-bluetooth": "^1.2.6"
+    "bluetooth-serial-port": "^2.2.7",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {},
   "scripts": {
