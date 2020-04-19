@@ -1,0 +1,18 @@
+{
+  "name": "trainingbotui",
+  "version": "1.0.0",
+  "description": "UI to control the TrainingBot",
+  "main": "main.js",
+  "dependencies": {
+    "node-bluetooth": "^1.2.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "robotics"
+  ],
+  "author": "Binit Shah",
+  "license": "MIT"
+}
