@@ -3,42 +3,120 @@
     <head>
         <script src='/socket.io/socket.io.js'></script>
         <script>
+        	var charkey="NOKEY";
+        	var clientid=0;
             var socket = io();
 
-            socket.on('welcome', function(data) {
-                addMessage(data.message);
-
-                // Respond with a message including this clients' id sent from the server
-                socket.emit('i am client', {data: 'foo!', id: data.id});
+            socket.on('welcome', data => {
+                clientid=data.id;
+                document.getElementById("clientid").innerHTML = 'Client ID: ' + data.id;
+                socket.emit('Client Connect', {data: 'Client ' + data.message, id: data.id});
             });
-            socket.on('time', function(data) {
-                addMessage(data.time);
+
+            socket.on('status', data => {
+                document.getElementById("clocktik").innerHTML = 'Time: ' + data.time;
+                document.getElementById("blestatus").innerHTML = 'Bluetooth Status:' + data.blestatus;
             });
-            socket.on('error', console.error.bind(console));
-            socket.on('message', console.log.bind(console));
 
-            function addMessage(message) {
-                var text = document.createTextNode(message),
-                    el = document.createElement('li'),
-                    messages = document.getElementById('messages');
+            socket.on('feedback', data => {
+                document.getElementById("feedback").innerHTML = 'FeedBack: ' + data.feedback;
+            });
 
-                el.appendChild(text);
-                messages.appendChild(el);
-            }
-
-			var charfield = document.getElementById("char");
-			charfield.onkeypress = function(e) {
+			document.onkeydown = checkKey;
+			function checkKey(e) {
+	            var key_map = new Map([ [ 37, "LEFT KEY" ], 
+	            						[ 38, "UP KEY" ],
+	            						[ 39, "RIGHT KEY" ],
+	            						[ 40, "DOWN KEY" ],
+	            						[ 83, "STOP KEY" ],
+	            						[ 67, "CLEAR KEY" ]
+	            					]);
 			    e = e || window.event;
-			    var charCode = (typeof e.which == "number") ? e.which : e.keyCode;
-			    if (charCode > 0) {
-			        alert("Typed character: " + String.fromCharCode(charCode));
+			    if (e.keyCode == '37' || e.keyCode == '38' || e.keyCode == '39' || 
+			    		e.keyCode == '40' || e.keyCode == '83' || e.keyCode == '67') {
+			        // 37: LEFT arrow, 38: Up arrow, 39: RIGHT arrow, 40: DOWN arror, 83: S key, 67: C Key
+			        charkey = key_map.get(e.keyCode);
+				    socket.emit('Key Press', {data: 'Key', id: clientid, key: charkey});
 			    }
-			};
+			    if (e.keyCode == '67')
+			    {
+			    	//67: C Key , clear screen
+			    	init();
+			    }
+			}
+
+			var context;
+			var oldx=50;
+			var oldy=50;
+			var botx=50;
+			var boty=250;
+			var botspeedx=1;
+			var botspeedy=1;
+
+			function init()
+			{
+			  context= myCanvas.getContext('2d');
+			  context.clearRect(0,0, 800,300);
+			}
+
+			function clearpoint(x, y, redius) {
+			  context.beginPath();
+			  context.clearRect(x - redius, y - redius, redius * 2, redius * 2);
+			  context.closePath();
+			}
+
+			function drawpoint(x, y, redius) {  
+			  context.fillStyle="blue";
+			  context.beginPath();
+			    context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+			  context.closePath();
+			  context.fill();
+			  oldx=x-redius*2; oldy=y-redius*2;
+			}
+
+			function drawbot(x, y, redius) {  
+			  context.fillStyle="red";
+			  context.beginPath();
+			    context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+			  context.closePath();
+			  context.fill();
+			}
+
+			function marklocation(event) {
+			  clearpoint(oldx, oldy, 5);
+			  drawpoint(event.clientX, event.clientY, 5);
+			  changespeed(); 
+			}
+
+			function changespeed() {
+			  if(oldx>botx) 
+			    botspeedx =1;
+			  else
+			    botspeedx =-1;
+			  if(oldy>boty) 
+			    botspeedy =1;
+			  else
+			    botspeedy =-1;
+			}
+
+			function drivebot()
+			{
+			  drawbot(botx, boty, 3, "red");
+			  botx+=botspeedx;
+			  boty+=botspeedy;
+			}
+			// Send current time every 1 secs
+			setInterval(drivebot, 1000);
 
         </script>
     </head>
-    <body id="char">
-        <ul id='messages'></ul>
-
+    <body onLoad="init();">
+		<div onclick="marklocation(event)">
+		<canvas id="myCanvas" width="800" height="400" style="border: 1px solid black;"> </canvas>
+		<ul id='messages'></ul>
+		<p id="clientid">Client ID: clientid</p>
+		<p id="clocktik">Time: clock time</p>
+		<p id="blestatus">Status: Blue Tooth Status</p>
+		<p id="feedback">FeedBack: Present Key feedback</p>
     </body>
 </html>
