@@ -1,48 +1,39 @@
 <!doctype html>
 <html>
-    <head>
-        <script src='/socket.io/socket.io.js'></script>
-        <script>
-        	var charkey="NOKEY";
-        	var clientid=0;
-            var socket = io();
+	<head>
+		<script src='/socket.io/socket.io.js'></script>
+		<script>
+			var clientid = 0;
+			var blestatus = 0;
+			var socket = io();
+			const BTSERIAL_STATUS = [ "bluetooth disconnected", "bluetooth connected", "bluetooth serial port error", "bluetooth connect error" ];
 
-            socket.on('welcome', data => {
-                clientid=data.id;
-                document.getElementById("clientid").innerHTML = 'Client ID: ' + data.id;
-                socket.emit('Client Connect', {data: 'Client ' + data.message, id: data.id});
-            });
+			socket.on('welcome', data => {
+				clientid=data.id;
+				document.getElementById("clientid").innerHTML = 'Client ID: ' + clientid;
+			});
 
-            socket.on('status', data => {
-                document.getElementById("clocktik").innerHTML = 'Time: ' + data.time;
-                document.getElementById("blestatus").innerHTML = 'Bluetooth Status:' + data.blestatus;
-            });
+			socket.on('status', data => {
+				blestatus = data.blestatus;
+				document.getElementById("blestatus").innerHTML = 'Bluetooth Status:' + BTSERIAL_STATUS[blestatus];
+			});
 
-            socket.on('feedback', data => {
-                document.getElementById("feedback").innerHTML = 'FeedBack: ' + data.feedback;
-            });
+			/*socket.on('feedback', data => {
+				document.getElementById("feedback").innerHTML = 'FeedBack: ' + data.feedback;
+			});*/
 
 			document.onkeydown = checkKey;
 			function checkKey(e) {
-	            var key_map = new Map([ [ 37, "LEFT KEY" ], 
-	            						[ 38, "UP KEY" ],
-	            						[ 39, "RIGHT KEY" ],
-	            						[ 40, "DOWN KEY" ],
-	            						[ 83, "STOP KEY" ],
-	            						[ 67, "CLEAR KEY" ]
-	            					]);
-			    e = e || window.event;
-			    if (e.keyCode == '37' || e.keyCode == '38' || e.keyCode == '39' || 
-			    		e.keyCode == '40' || e.keyCode == '83' || e.keyCode == '67') {
-			        // 37: LEFT arrow, 38: Up arrow, 39: RIGHT arrow, 40: DOWN arror, 83: S key, 67: C Key
-			        charkey = key_map.get(e.keyCode);
-				    socket.emit('Key Press', {data: 'Key', id: clientid, key: charkey});
-			    }
-			    if (e.keyCode == '67')
-			    {
-			    	//67: C Key , clear screen
-			    	init();
-			    }
+				e = e || window.event;
+				if (e.keyCode == '37' || e.keyCode == '38' || e.keyCode == '39' || 
+						e.keyCode == '40' || e.keyCode == '83') {
+					// 37: LEFT arrow, 38: Up arrow, 39: RIGHT arrow, 40: DOWN arror, 83: S key
+					socket.emit('keypress', { id: clientid, key: e.keyCode });
+				}
+				else if (e.keyCode == '67') {
+					//67: C Key , clear screen
+					init();
+				}
 			}
 
 			var context;
@@ -55,8 +46,8 @@
 
 			function init()
 			{
-			  context= myCanvas.getContext('2d');
-			  context.clearRect(0,0, 800,300);
+			  context = myCanvas.getContext('2d');
+			  context.clearRect(0, 0, 800, 400);
 			}
 
 			function clearpoint(x, y, redius) {
@@ -68,7 +59,7 @@
 			function drawpoint(x, y, redius) {  
 			  context.fillStyle="blue";
 			  context.beginPath();
-			    context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
 			  context.closePath();
 			  context.fill();
 			  oldx=x-redius*2; oldy=y-redius*2;
@@ -77,7 +68,7 @@
 			function drawbot(x, y, redius) {  
 			  context.fillStyle="red";
 			  context.beginPath();
-			    context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
 			  context.closePath();
 			  context.fill();
 			}
@@ -90,13 +81,13 @@
 
 			function changespeed() {
 			  if(oldx>botx) 
-			    botspeedx =1;
+				botspeedx =1;
 			  else
-			    botspeedx =-1;
+				botspeedx =-1;
 			  if(oldy>boty) 
-			    botspeedy =1;
+				botspeedy =1;
 			  else
-			    botspeedy =-1;
+				botspeedy =-1;
 			}
 
 			function drivebot()
@@ -108,15 +99,13 @@
 			// Send current time every 1 secs
 			setInterval(drivebot, 1000);
 
-        </script>
-    </head>
-    <body onLoad="init();">
+		</script>
+	</head>
+	<body onLoad="init();">
 		<div onclick="marklocation(event)">
 		<canvas id="myCanvas" width="800" height="400" style="border: 1px solid black;"> </canvas>
 		<ul id='messages'></ul>
 		<p id="clientid">Client ID: clientid</p>
-		<p id="clocktik">Time: clock time</p>
 		<p id="blestatus">Status: Blue Tooth Status</p>
-		<p id="feedback">FeedBack: Present Key feedback</p>
-    </body>
+	</body>
 </html>
