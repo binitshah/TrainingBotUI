@@ -6,7 +6,8 @@
 			var clientid = 0;
 			var blestatus = 0;
 			var socket = io();
-			const BTSERIAL_STATUS = [ "bluetooth disconnected", "bluetooth connected", "bluetooth serial port error", "bluetooth connect error" ];
+			const BTSERIAL_STATUS = ["bluetooth disconnected", "bluetooth connected",
+									 "bluetooth paired, but not connected", "bluetooth connect error"];
 
 			socket.on('welcome', data => {
 				clientid=data.id;

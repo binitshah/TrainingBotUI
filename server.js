@@ -23,7 +23,9 @@ let btserial_status = BTSERIAL_DISCONNECTED;
 // Robot State
 let wcmd_left = 0.0;
 let wcmd_right = 0.0;
-const wdelta = 0.1;
+const wdelta = 0.5;
+const wupper_limit = 10.0;
+const wlower_limit = -10.0;
 
 function sendStatusToClients() {
 	if (io == null) return;
@@ -62,7 +64,18 @@ function processKeyData(key) {
 		wcmd_right = 0.0;
 	}
 
-	transmitCommand(wcmd_left, wcmd_right, 0);
+	if (wcmd_left >= wupper_limit) {
+		wcmd_left = wupper_limit;
+	} else if (wcmd_left <= wlower_limit) {
+		wcmd_left = wlower_limit;
+	}
+	if (wcmd_right >= wupper_limit) {
+		wcmd_right = wupper_limit;
+	} else if (wcmd_right <= wlower_limit) {
+		wcmd_right = wlower_limit;
+	}
+
+	transmitCommand(wcmd_left, wcmd_right, true);
 }
 
 function transmitCommand(wtarget_left, wtarget_right, is_conservative) {
@@ -74,6 +87,7 @@ function transmitCommand(wtarget_left, wtarget_right, is_conservative) {
 	}
 	let conservative = is_conservative ? 1 : 0;
 	let command = "<" + wtarget_left.toFixed(6) + "," + wtarget_right.toFixed(6) + "," + conservative + ">\n";
+	console.log(command);
 	btserial.write(Buffer.from(command, 'utf-8'), (err, bytesWritten) => {
 		if (err) console.log(err);
 	});
@@ -96,7 +110,7 @@ btserial.on('found', (address, name) => {
 		}, () => {
 			btserial_status = BTSERIAL_SERPORTERR;
 			sendStatusToClients();
-			console.error("btserial error: " + DEVICE_NAME + " serial port not found");
+			console.error("btserial error: " + DEVICE_NAME + " paired, but not connected");
 		});
 	}
 });
