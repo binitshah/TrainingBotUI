@@ -117,13 +117,11 @@ btserial.on('found', (address, name) => {
 
 btserial.inquire();
 
-/*
+
 btserial.on('data', buffer => {
 	console.log(buffer.toString('utf-8'));
-	socket.emit('feedback', { feedback: keydata.key });
-
+	//socket.emit('feedback', { feedback: keydata.key });
 });
-*/
 
 // Emit welcome message on connection
 io.on('connection', socket => {
