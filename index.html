@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<script src='/socket.io/socket.io.js'></script>
+		<script src='/socket.io/socket.io.js'> </script>
 		<script>
 			var clientid = 0;
 			var blestatus = 0;
@@ -16,6 +16,7 @@
 
 			socket.on('status', data => {
 				blestatus = data.blestatus;
+				updateBlueToothStatus();
 				document.getElementById("blestatus").innerHTML = 'Bluetooth Status:' + BTSERIAL_STATUS[blestatus];
 			});
 
@@ -47,8 +48,32 @@
 
 			function init()
 			{
-			  context = myCanvas.getContext('2d');
-			  context.clearRect(0, 0, 800, 400);
+				context = myCanvas.getContext('2d');
+				context.clearRect(0, 0, 800, 400);
+				updateBlueToothStatus();
+			}
+
+			function updateBlueToothStatus() {
+				var x = 200;
+				var y = 200;
+				var redius = 10; 
+			
+				context.beginPath();
+				context.clearRect(x - redius, y - redius, redius * 2, redius * 2);
+				context.closePath();
+
+				context.fillStyle = "red";
+				if (blestatus == 1) {
+					context.fillStyle="green";
+				}
+				else if(blestatus == 2) {
+					context.fillStyle="orange";
+				}
+
+				context.beginPath();
+				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+				context.closePath();
+				context.fill();
 			}
 
 			function clearpoint(x, y, redius) {

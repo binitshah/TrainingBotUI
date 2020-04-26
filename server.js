@@ -1,17 +1,24 @@
 // HTTP Connection
 var http = require('http'), fs = require('fs');
 let index = fs.readFileSync(__dirname + '/index.html');
+let extjs1 = fs.readFileSync(__dirname + '/utility.js');
 
 var app = http.createServer((req, res) => {
-	res.writeHead(200, {'Content-Type': 'text/html'});
-	res.end(index);
+	if(req.url == '/') {
+		res.writeHead(200, {'Content-Type': 'text/html'});
+		res.end(index);
+	}
+	else if(req.url == '/utility.js') {
+		res.writeHead(200, {'Content-Type': 'text/html'});
+		res.end(extjs1);		
+	}
 });
 
 var io = require('socket.io').listen(app);
 
 // Bluetooth Connection
 var btserial = new (require('bluetooth-serial-port')).BluetoothSerialPort();
-const DEVICE_NAME = "SHAHBLE";
+const DEVICE_NAME = "SHAHBLE1";
 
 // 0-disconnected, 1-conncted, 2-serial port err, 3-connct err
 const BTSERIAL_DISCONNECTED = 0;
@@ -26,23 +33,30 @@ let wcmd_right = 0.0;
 const wdelta = 0.5;
 const wupper_limit = 10.0;
 const wlower_limit = -10.0;
+let x=0;y=0;theta=0;
 
 function sendStatusToClients() {
 	if (io == null) return;
 	io.emit('status', { blestatus: btserial_status });
 }
 
-/*
 function sendFeedBackToClient(data) {
 	if (io == null) return;
 	io.emit('feedback', { feedback: data.key});
 }
-*/
 
 function processKeyData(key) {
-	if (key != '37' && key != '38' && key != '39' && 
-			key != '40' && key != '83') return;
-
+	let mykey = Math.abs(key);
+	if(mykey >=0 && mykey <= 9) {
+		wcmd_right = key; 
+		wcmd_left = key;
+    }
+	else if (key != '37' && key != '38' && key != '39' && 
+			key != '40' && key != '83' && key != '76' && key != '82') {
+			return;
+	}
+	// 37: LEFT arrow, 38: Up arrow, 39: RIGHT arrow, 40: DOWN arror, 83: S key
+	// 76: L, 82: R
 	if (key == 38) { // UP
 		wcmd_left += wdelta;
 		wcmd_right += wdelta;
@@ -63,6 +77,14 @@ function processKeyData(key) {
 		wcmd_left = 0.0;
 		wcmd_right = 0.0;
 	}
+	else if (key == 76) { // L trun
+		wcmd_left = -3;
+		wcmd_right = 3;
+	}
+	else if (key == 82) { // R trun
+		wcmd_left = 3;
+		wcmd_right = -3;
+	}
 
 	if (wcmd_left >= wupper_limit) {
 		wcmd_left = wupper_limit;
@@ -75,6 +97,7 @@ function processKeyData(key) {
 		wcmd_right = wlower_limit;
 	}
 
+	//console.log("transmitCommand: ", wcmd_left, wcmd_right, key, mykey);
 	transmitCommand(wcmd_left, wcmd_right, true);
 }
 
@@ -86,7 +109,7 @@ function transmitCommand(wtarget_left, wtarget_right, is_conservative) {
 		return;
 	}
 	let conservative = is_conservative ? 1 : 0;
-	let command = "<" + wtarget_left.toFixed(6) + "," + wtarget_right.toFixed(6) + "," + conservative + ">\n";
+	let command = "<" + wtarget_left.toFixed(6) + "," + wtarget_right.toFixed(6) + "," + conservative + ">";
 	console.log(command);
 	btserial.write(Buffer.from(command, 'utf-8'), (err, bytesWritten) => {
 		if (err) console.log(err);
@@ -117,7 +140,7 @@ btserial.on('found', (address, name) => {
 
 btserial.inquire();
 
-
+// feedback received from bluetooth, x,t,theta.
 btserial.on('data', buffer => {
 	console.log(buffer.toString('utf-8'));
 	//socket.emit('feedback', { feedback: keydata.key });
