@@ -1,23 +1,42 @@
 <!doctype html>
 <html>
 	<head>
+		<style>
+			html, body {
+				width:  100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
 		<script src='/socket.io/socket.io.js'> </script>
-		<script>
-			var clientid = 0;
+		<script type='text/javascript' > 
+			//Global variables 
 			var blestatus = 0;
 			var socket = io();
-			const BTSERIAL_STATUS = ["bluetooth disconnected", "bluetooth connected",
-									 "bluetooth paired, but not connected", "bluetooth connect error"];
+			var context = null;
 
-			socket.on('welcome', data => {
-				clientid=data.id;
-				document.getElementById("clientid").innerHTML = 'Client ID: ' + clientid;
-			});
+			var canvassizex = 800;
+			var canvassizey = 400;
+			var oldx = 50;
+			var oldy = 50;
+			var botx = 50;
+			var boty = 250;
+			var bottheta = 0;
+			
+			var botspeedx = 1;
+			var botspeedy = 1;
+
+			var pixpermx = 30;
+			var pixpermy = 30;
+		</script>
+		<script type="text/javascript" src="utility.js"></script>
+		<script>
 
 			socket.on('status', data => {
 				blestatus = data.blestatus;
+				console.log("Data Received: " + blestatus);
 				updateBlueToothStatus();
-				document.getElementById("blestatus").innerHTML = 'Bluetooth Status:' + BTSERIAL_STATUS[blestatus];
 			});
 
 			/*socket.on('feedback', data => {
@@ -27,10 +46,21 @@
 			document.onkeydown = checkKey;
 			function checkKey(e) {
 				e = e || window.event;
+				//console.log("Key Press: " + e.keyCode + " Shift Key: " + e.shiftKey);
 				if (e.keyCode == '37' || e.keyCode == '38' || e.keyCode == '39' || 
 						e.keyCode == '40' || e.keyCode == '83') {
 					// 37: LEFT arrow, 38: Up arrow, 39: RIGHT arrow, 40: DOWN arror, 83: S key
-					socket.emit('keypress', { id: clientid, key: e.keyCode });
+					socket.emit('keypress', { key: e.keyCode });
+				}
+				else if (e.keyCode >= 48 && e.keyCode <=57) {
+					//48: 0 to 57: 9
+					var key = e.keyCode - 48;
+					if(e.shiftKey) key = -key;
+					socket.emit('keypress', { key: key });
+				}
+				else if(e.keyCode == 76 || e.keyCode == 82) {
+					//76: L, 82: R
+					socket.emit('keypress', { key: e.keyCode });
 				}
 				else if (e.keyCode == '67') {
 					//67: C Key , clear screen
@@ -38,71 +68,53 @@
 				}
 			}
 
-			var context;
-			var oldx=50;
-			var oldy=50;
-			var botx=50;
-			var boty=250;
-			var botspeedx=1;
-			var botspeedy=1;
 
 			function init()
 			{
 				context = myCanvas.getContext('2d');
-				context.clearRect(0, 0, 800, 400);
+				context.canvas.width  = window.innerWidth;
+  				context.canvas.height = window.innerHeight;
+  				canvassizex = window.innerWidth;
+  				canvassizey = window.innerHeight;
+				context.clearRect(0, 0, canvassizex, canvassizey);
 				updateBlueToothStatus();
+				drawCenter(100,100);
+				drawGrid(context, canvassizex, canvassizey, pixpermx);
 			}
 
-			function updateBlueToothStatus() {
-				var x = 200;
-				var y = 200;
-				var redius = 10; 
-			
+			function clearpoint(x, y, redius) {
+				if (context == null) return;
 				context.beginPath();
 				context.clearRect(x - redius, y - redius, redius * 2, redius * 2);
 				context.closePath();
+			}
 
-				context.fillStyle = "red";
-				if (blestatus == 1) {
-					context.fillStyle="green";
-				}
-				else if(blestatus == 2) {
-					context.fillStyle="orange";
-				}
+			function drawpoint(x, y, redius) {  
+				if (context == null) return;
+				context.fillStyle="blue";
+				context.beginPath();
+				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
+				context.closePath();
+				context.fill();
+				oldx=x-redius*2; oldy=y-redius*2;
+			}
 
+			function drawbot(x, y, redius) {  
+				if (context == null) return;
+				var w=25;
+				var h=10;
+				context.fillStyle="red";
 				context.beginPath();
 				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
 				context.closePath();
 				context.fill();
 			}
 
-			function clearpoint(x, y, redius) {
-			  context.beginPath();
-			  context.clearRect(x - redius, y - redius, redius * 2, redius * 2);
-			  context.closePath();
-			}
-
-			function drawpoint(x, y, redius) {  
-			  context.fillStyle="blue";
-			  context.beginPath();
-				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
-			  context.closePath();
-			  context.fill();
-			  oldx=x-redius*2; oldy=y-redius*2;
-			}
-
-			function drawbot(x, y, redius) {  
-			  context.fillStyle="red";
-			  context.beginPath();
-				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
-			  context.closePath();
-			  context.fill();
-			}
-
 			function marklocation(event) {
-			  clearpoint(oldx, oldy, 5);
-			  drawpoint(event.clientX, event.clientY, 5);
-			  changespeed(); 
+				if (context == null) return;
+				clearpoint(oldx, oldy, 5);
+				drawpoint(event.clientX, event.clientY, 5);
+				changespeed(); 
 			}
 
 			function changespeed() {
@@ -118,9 +130,9 @@
 
 			function drivebot()
 			{
-			  drawbot(botx, boty, 3, "red");
-			  botx+=botspeedx;
-			  boty+=botspeedy;
+				drawbot(botx, boty, 3, "red");
+				botx+=botspeedx;
+				boty+=botspeedy;
 			}
 			// Send current time every 1 secs
 			setInterval(drivebot, 1000);
@@ -128,10 +140,6 @@
 		</script>
 	</head>
 	<body onLoad="init();">
-		<div onclick="marklocation(event)">
-		<canvas id="myCanvas" width="800" height="400" style="border: 1px solid black;"> </canvas>
-		<ul id='messages'></ul>
-		<p id="clientid">Client ID: clientid</p>
-		<p id="blestatus">Status: Blue Tooth Status</p>
+		<canvas id="myCanvas" onclick="marklocation(event)" width="800" height="400"> </canvas>
 	</body>
 </html>
