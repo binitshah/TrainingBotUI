@@ -50,49 +50,103 @@ function drawGrid(ctx, w, h, inc)
 	ctx.closePath(); //done
 }
 
-function drawCenter(x, y) {
-	if (context == null) return;
-	context.fillStyle="red";
-	context.beginPath();
-	context.arc(x, y, 4, 0, 2 * Math.PI);
-	context.stroke();
-	context.fill();
-	context.closePath();
+function drawCenter(ctx, pt) {
+	if (ctx == null) return;
+	ctx.fillStyle="red";
+	ctx.beginPath();
+	ctx.arc(pt.x, pt.y, 4, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.fill();
+	ctx.closePath();
 }
 
-function clearRectRobot(x, y, theta) {
-	if (context == null) return;
-	var w = 60; // bot width
+function clearRectRobot(ctx, pt, theta) {
+	if (ctx == null) return;
+	var w = 30; // bot width
 	var h = 6; // bot hight
 
-	context.save();
-	context.fillStyle="white";
-    context.beginPath();
-    context.translate(x,y);
-    context.rotate(theta * Math.PI / 180);
-    context.clearRect(-w/2-1, -h/2-1, w+2, h+2);
-    context.clearRect(-w/2+w-7, -h/2+h-10, 14, 14);
-	context.closePath();
-	context.restore();
+	ctx.save();
+	ctx.fillStyle="white";
+    ctx.beginPath();
+    ctx.translate(pt.x,pt.y);
+    ctx.rotate(theta * Math.PI);
+    ctx.clearRect(-w/2-1, -h/2-1, w+2, h+2);
+    ctx.clearRect(-w/2+w-7, -h/2+h-10, 14, 14);
+	ctx.closePath();
+	ctx.restore();
 }
 
-function rotateRectRobot(x, y, theta) {
-	if (context == null) return;
-	var w = 60; // bot width
+function rotateRectRobot(ctx, pt, theta) {
+	if (ctx == null) return;
+	var w = 30; // bot width
 	var h = 6; // bot hight
 
-	context.save();
-    context.beginPath();
-    context.translate(x,y);
-    context.rotate(theta * Math.PI / 180);
-	context.fillStyle="blue";
-	context.fillRect(-w/2, -h/2, w, h);
-    context.fillRect(-w/2+w-6, -h/2+h-9, 12, 12); //add head
-	context.fillStyle="red";
-	//context.fillRect(-w/2-6, -h/2, 6, 6); //add tail rect
-    context.arc(-w/2-3, -h/2+3, 3, 0, 3.14159265359 *2, true); //add tail circle.
-    context.fill();
-	context.closePath();
-	context.restore();
+	ctx.save();
+    ctx.beginPath();
+    ctx.translate(pt.x,pt.y);
+    ctx.rotate(theta * Math.PI);
+	ctx.fillStyle="blue";
+	ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.fillRect(-w/2+w-6, -h/2+h-9, 12, 12); //add head
+	//ctx.fillStyle="red";
+	// //XX ctx.fillRect(-w/2-6, -h/2, 6, 6); //add tail rect
+    //ctx.arc(-w/2-3, -h/2+3, 3, 0, 3.14159265359 *2, true); //add tail circle.
+    //ctx.fill();
+	ctx.closePath();
+	ctx.restore();
+}
+
+function markPoint(ctx, pt, opt) {
+	if (ctx == null) return;
+	var radius = 5;
+	ctx.beginPath();
+	ctx.clearRect(opt.x - radius, opt.y - radius, radius * 2, radius * 2);
+	ctx.fillStyle="blue";
+	ctx.arc(pt.x-radius*2,pt.y-radius*2,radius,0,Math.PI*2,true);
+	ctx.fill();
+	ctx.closePath();
+	opt.x=pt.x-radius*2; opt.y=pt.y-radius*2;
+}
+
+function drawPath(ctx, pts) {
+	if (ctx == null) return;
+	var pt, ppt;
+	if(pts.length>1) ppt = pts[0];
+	for(var i=0; i< pts.length; i++) {
+		pt = pts[i];
+		console.log("Pt Arr length: ", pts.length, pt.x, pt.y, ppt.x, ppt.y);
+		/*ctx.beginPath();
+		ctx.fillStyle="red";
+		ctx.arc(pt.x, pt.y, 5, 0, 2 * Math.PI);
+		ctx.fill();
+		ctx.closePath();*/
+
+		ctx.beginPath(); //begin
+		ctx.lineWidth=2;
+		ctx.strokeStyle = 'red';
+			ctx.moveTo(pt.x, pt.y); //put vaertical-y lines
+			ctx.lineTo(ppt.x, ppt.y);
+		ctx.stroke(); //draw it.
+		ctx.closePath(); //done
+		ppt=pt;
+	}
+}
+
+const sleep = (milliseconds) => {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+//part null return cmd; 
+//part have < return <+
+//part have > return cmd + >
+//return cmd+part.
+//collect command when start with Done
+function collectCmd(cmd, part) {
+	if(part == null) return cmd;
+	var n = part.search("<");
+	if(n != -1) return part.substring(n+1,part.length);
+	n = part.search(">");
+	if(n != -1) return "Done,"+cmd + part.substring(0, n);
+	return cmd+part;
 }
 

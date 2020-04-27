@@ -16,32 +16,59 @@
 			var socket = io();
 			var context = null;
 
+			function Point(x, y) {
+				this.x = x;
+				this.y = y;
+			}
 			var canvassizex = 800;
 			var canvassizey = 400;
-			var oldx = 50;
-			var oldy = 50;
-			var botx = 50;
-			var boty = 250;
-			var bottheta = 0;
+
+			var botPt = new Point(150,150);
+			var mkPt = new Point(50,50);
+			var omkPt = new Point(50,50);
+			var botPts = [];
+
+			var fbx=0;
+			var fby=0;
+			var fbtheta = 0;
 			
 			var botspeedx = 1;
 			var botspeedy = 1;
 
-			var pixpermx = 30;
-			var pixpermy = 30;
+			var pixpermx = 50;
+			var cmd="";
+			var cmds=[];
 		</script>
 		<script type="text/javascript" src="utility.js"></script>
 		<script>
 
 			socket.on('status', data => {
 				blestatus = data.blestatus;
-				console.log("Data Received: " + blestatus);
+				//console.log("Data Received: " + blestatus);
 				updateBlueToothStatus();
 			});
 
-			/*socket.on('feedback', data => {
-				document.getElementById("feedback").innerHTML = 'FeedBack: ' + data.feedback;
-			});*/
+			socket.on('feedback', data => {
+				//document.getElementById("messages").innerHTML = 'FeedBack: ' + data.feedback;
+				cmd = collectCmd(cmd, data.feedback);
+				if(cmd.startsWith("Done"))
+				{
+					console.log("Collected: ", cmd);
+					cmds = cmd.split(",");
+					if(cmds.length>3)
+					{
+						fbx = cmds[1];
+						botPt.x = botPt.x+fbx*50;
+						fby = cmds[2];
+						botPt.y = botPt.y+fby*50;
+						fbtheta = cmds[3];
+						rotateRectRobot(context, botPt, fbtheta);
+						console.log("DONE: ", fbx, fby, fbtheta);
+						botPts.push(new Point(botPt.x, botPt.y));
+					}
+				}
+				console.log("FeedBack: " + data.feedback);
+			});
 
 			document.onkeydown = checkKey;
 			function checkKey(e) {
@@ -78,68 +105,39 @@
   				canvassizey = window.innerHeight;
 				context.clearRect(0, 0, canvassizex, canvassizey);
 				updateBlueToothStatus();
-				drawCenter(100,100);
+				drawCenter(context, new Point(canvassizex/2, canvassizey/2));
 				drawGrid(context, canvassizex, canvassizey, pixpermx);
-			}
-
-			function clearpoint(x, y, redius) {
-				if (context == null) return;
-				context.beginPath();
-				context.clearRect(x - redius, y - redius, redius * 2, redius * 2);
-				context.closePath();
-			}
-
-			function drawpoint(x, y, redius) {  
-				if (context == null) return;
-				context.fillStyle="blue";
-				context.beginPath();
-				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
-				context.closePath();
-				context.fill();
-				oldx=x-redius*2; oldy=y-redius*2;
-			}
-
-			function drawbot(x, y, redius) {  
-				if (context == null) return;
-				var w=25;
-				var h=10;
-				context.fillStyle="red";
-				context.beginPath();
-				context.arc(x-redius*2,y-redius*2,redius,0,Math.PI*2,true);
-				context.closePath();
-				context.fill();
+				drawPath(context, botPts);
 			}
 
 			function marklocation(event) {
 				if (context == null) return;
-				clearpoint(oldx, oldy, 5);
-				drawpoint(event.clientX, event.clientY, 5);
-				changespeed(); 
+				mkPt.x = event.clientX;
+				mkPt.y = event.clientY;
+				markPoint(context, mkPt, omkPt);
 			}
 
-			function changespeed() {
-			  if(oldx>botx) 
-				botspeedx =1;
-			  else
-				botspeedx =-1;
-			  if(oldy>boty) 
-				botspeedy =1;
-			  else
-				botspeedy =-1;
-			}
-
+			var t=10;
 			function drivebot()
 			{
-				drawbot(botx, boty, 3, "red");
-				botx+=botspeedx;
-				boty+=botspeedy;
+				//clearRectRobot(context, botPt, t);
+				//sleep(1000);
+				init();
+				t+=1;
+				botPt.x+=2;
+				if(botPt.x > canvassizex) botPt.x=0;
+				botPt.y+=2;
+				if(botPt.y > canvassizey) botPt.y=0;
+				rotateRectRobot(context, botPt, t);
+				botPts.push(new Point(botPt.x, botPt.y));
 			}
 			// Send current time every 1 secs
-			setInterval(drivebot, 1000);
+			//setInterval(drivebot, 1000);
 
 		</script>
 	</head>
 	<body onLoad="init();">
 		<canvas id="myCanvas" onclick="marklocation(event)" width="800" height="400"> </canvas>
+		<p id="messages">Msg: From server</p>
 	</body>
 </html>

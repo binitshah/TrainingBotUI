@@ -18,7 +18,7 @@ var io = require('socket.io').listen(app);
 
 // Bluetooth Connection
 var btserial = new (require('bluetooth-serial-port')).BluetoothSerialPort();
-const DEVICE_NAME = "SHAHBLE1";
+const DEVICE_NAME = "SHAHBLE";
 
 // 0-disconnected, 1-conncted, 2-serial port err, 3-connct err
 const BTSERIAL_DISCONNECTED = 0;
@@ -42,7 +42,7 @@ function sendStatusToClients() {
 
 function sendFeedBackToClient(data) {
 	if (io == null) return;
-	io.emit('feedback', { feedback: data.key});
+	io.emit('feedback', { feedback: data});
 }
 
 function processKeyData(key) {
@@ -110,7 +110,7 @@ function transmitCommand(wtarget_left, wtarget_right, is_conservative) {
 	}
 	let conservative = is_conservative ? 1 : 0;
 	let command = "<" + wtarget_left.toFixed(6) + "," + wtarget_right.toFixed(6) + "," + conservative + ">";
-	console.log(command);
+	console.log("BT Send cmd: ", command);
 	btserial.write(Buffer.from(command, 'utf-8'), (err, bytesWritten) => {
 		if (err) console.log(err);
 	});
@@ -140,11 +140,14 @@ btserial.on('found', (address, name) => {
 
 btserial.inquire();
 
-// feedback received from bluetooth, x,t,theta.
+// feedback received from bluetooth, x,y,theta.
 btserial.on('data', buffer => {
-	console.log(buffer.toString('utf-8'));
+	let data = Buffer.from(buffer, 'utf-8');
+	console.log("BT Feedback: ", data.toString('utf-8'));''
+	sendFeedBackToClient(data.toString('utf-8'));
 	//socket.emit('feedback', { feedback: keydata.key });
 });
+
 
 // Emit welcome message on connection
 io.on('connection', socket => {
